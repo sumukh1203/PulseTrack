@@ -1,0 +1,94 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pulsetrack"
+version = "0.1.0"
+description = "High-performance telemetry and event-collection backend"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    { name = "Sumukh", email = "dev@example.com" }
+]
+dependencies = [
+    "fastapi>=0.110.0,<0.112.0",
+    "uvicorn[standard]>=0.28.0,<0.31.0",
+    "pydantic>=2.6.0,<3.0.0",
+    "pydantic-settings>=2.2.0,<3.0.0",
+    "sqlalchemy[asyncio]>=2.0.28,<2.1.0",
+    "asyncpg>=0.29.0,<1.0.0",
+    "alembic>=1.13.1,<2.0.0",
+    "redis>=5.0.3,<6.0.0",
+    "arq>=0.25.0,<0.26.0",
+    "prometheus-client>=0.20.0,<0.21.0",
+    "httpx>=0.27.0,<0.28.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.1.0,<9.0.0",
+    "pytest-asyncio>=0.23.5,<0.24.0",
+    "pytest-cov>=4.1.0,<5.0.0",
+    "ruff>=0.3.0,<0.6.0",
+    "mypy>=1.9.0,<2.0.0",
+    "bandit>=1.7.8,<2.0.0",
+    "pre-commit>=3.6.2,<4.0.0"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "C90", # mccabe complexity
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "S",   # flake8-bandit
+]
+ignore = [
+    "B008", # do not perform function calls in argument defaults (FastAPI Depends)
+    "S101", # use of assert (pytest relies on assert)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "arq.*",
+    "prometheus_client.*"
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q --strict-markers --cov=app --cov-report=term-missing"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

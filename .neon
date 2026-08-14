@@ -1,0 +1,10 @@
+{
+  "orgId": "org-muddy-sky-69504729",
+  "projectId": "flat-firefly-06696217",
+  "_init": {
+    "features": [
+      "database",
+      "auth"
+    ]
+  }
+}
