@@ -2,7 +2,6 @@
 
 ### High-performance event ingestion and telemetry backend built with FastAPI, PostgreSQL, Redis, and async workers.
 
-[![CI Pipeline](https://github.com/pulsetrack/pulsetrack/actions/workflows/ci.yml/badge.svg)](https://github.com/pulsetrack/pulsetrack/actions/workflows/ci.yml)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg)](https://fastapi.tiangolo.com)
 [![SQLAlchemy 2.0](https://img.shields.io/badge/SQLAlchemy-2.0-red.svg)](https://www.sqlalchemy.org)
