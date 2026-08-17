@@ -53,3 +53,10 @@ class ApplicationRepository:
             select(Application).where(Application.owner_email == owner_email)
         )
         return result.scalar_one_or_none()
+
+    async def get_all(self) -> list[Application]:
+        """Retrieves all registered Application entities."""
+        result = await self.session.execute(
+            select(Application).order_by(Application.created_at.desc())
+        )
+        return list(result.scalars().all())

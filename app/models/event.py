@@ -45,9 +45,11 @@ class Event(Base):
             "idx_events_app_idempotency",
             "application_id",
             "idempotency_key",
+            "occurred_at",
             unique=True,
             postgresql_where=text("idempotency_key IS NOT NULL"),
         ),
+        {"postgresql_partition_by": "RANGE (occurred_at)"},
     )
 
     id: Mapped[int] = mapped_column(
@@ -75,6 +77,7 @@ class Event(Base):
     )
     occurred_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
+        primary_key=True,
         nullable=False,
     )
     ingested_at: Mapped[datetime] = mapped_column(

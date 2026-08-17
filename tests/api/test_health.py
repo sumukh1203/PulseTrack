@@ -11,7 +11,7 @@ async def test_health_check_endpoint(async_client: AsyncClient) -> None:
 
     data = response.json()
     assert "status" in data
-    assert data["status"] in ["ok", "degraded"]
+    assert data["status"] in ["healthy", "degraded"]
     assert "environment" in data
     assert "timestamp" in data
     assert "services" in data
@@ -24,4 +24,4 @@ async def test_v1_health_check_endpoint(async_client: AsyncClient) -> None:
     response = await async_client.get("/v1/health")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
-    assert data["status"] in ["ok", "degraded"]
+    assert data["status"] in ["healthy", "degraded"]

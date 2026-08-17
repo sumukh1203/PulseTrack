@@ -33,7 +33,7 @@ async def check_health(
         db_status = "unhealthy"
 
     return {
-        "status": "ok" if db_status == "healthy" else "degraded",
+        "status": "healthy" if db_status == "healthy" else "degraded",
         "environment": settings.ENVIRONMENT,
         "timestamp": datetime.now(UTC).isoformat(),
         "services": {

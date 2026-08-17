@@ -52,6 +52,26 @@ services:
     volumes:
       - ./app:/app/app
 
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: pulsetrack-worker
+    command: ["arq", "app.core.worker.WorkerSettings"]
+    environment:
+      ENVIRONMENT: development
+      LOG_LEVEL: DEBUG
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/pulsetrack
+      REDIS_URL: redis://redis:6379/0
+      RATE_LIMIT_DEFAULT_PER_MINUTE: 600
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./app:/app/app
+
 volumes:
   postgres_data:
   redis_data:

@@ -33,7 +33,8 @@ dev = [
     "ruff>=0.3.0,<0.6.0",
     "mypy>=1.9.0,<2.0.0",
     "bandit>=1.7.8,<2.0.0",
-    "pre-commit>=3.6.2,<4.0.0"
+    "pre-commit>=3.6.2,<4.0.0",
+    "locust>=2.24.0"
 ]
 
 [tool.setuptools.packages.find]
@@ -58,6 +59,10 @@ select = [
 ignore = [
     "B008", # do not perform function calls in argument defaults (FastAPI Depends)
     "S101", # use of assert (pytest relies on assert)
+    "E501", # line length overrides (handled by formatter where possible)
+    "S110", # allow empty try-except-pass blocks for silent fallback metrics
+    "S311", # allow pseudo-random generators for mock data/load tests
+    "C901", # allow complex functions in demo scripts
 ]
 
 [tool.ruff.lint.isort]

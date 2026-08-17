@@ -35,3 +35,12 @@ class ApplicationResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ApplicationKeyRotateResponse(BaseModel):
+    """Schema returned when rotating an application's API key."""
+
+    api_key: str = Field(..., description="Newly issued plaintext API key")
+    rotated_at: datetime = Field(..., description="Timestamp when rotation occurred")
+
+    model_config = ConfigDict(from_attributes=True)

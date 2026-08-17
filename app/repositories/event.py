@@ -100,3 +100,15 @@ class EventRepository:
             }
             for row in rows
         ]
+
+    async def get_recent_events(
+        self, application_id: uuid.UUID, limit: int = 50
+    ) -> list[Event]:
+        """Retrieves the most recent events for a given application tenant."""
+        result = await self.session.execute(
+            select(Event)
+            .where(Event.application_id == application_id)
+            .order_by(Event.occurred_at.desc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())

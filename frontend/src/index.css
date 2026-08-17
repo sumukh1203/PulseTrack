@@ -6,32 +6,32 @@
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
 
-  /* PulseTrack Color Tokens - Dark Baseline */
-  --pt-bg-base: #0B0E14;
-  --pt-bg-surface-1: #111620;
-  --pt-bg-surface-2: #1A202C;
-  --pt-bg-surface-3: #242C3D;
+  /* PulseTrack Color Tokens - Clean Slate/Zinc Dark Theme */
+  --pt-bg-base: #09090b; /* Zinc 950 - Matte app background */
+  --pt-bg-surface-1: #09090b; /* Overview body blends with base background */
+  --pt-bg-surface-2: #09090b; /* Secondary surfaces */
+  --pt-bg-surface-3: #18181b; /* Zinc 900 - Interactive panels/dropdowns */
 
-  --pt-border-subtle: #1E293B;
-  --pt-border-strong: #334155;
-  --pt-border-focus: #6366F1;
+  --pt-border-subtle: #18181b; /* Zinc 900 - Extremely faint border */
+  --pt-border-strong: #27272a; /* Zinc 800 - Main borders & dividers */
+  --pt-border-focus: #52525b; /* Zinc 500 - Active outlines */
 
-  --pt-text-primary: #F8FAFC;
-  --pt-text-secondary: #94A3B8;
-  --pt-text-tertiary: #64748B;
+  --pt-text-primary: #f4f4f5; /* Zinc 100 - High contrast text */
+  --pt-text-secondary: #a1a1aa; /* Zinc 400 - Readable secondary text */
+  --pt-text-tertiary: #71717a; /* Zinc 500 - Small details/timestamps */
 
-  --pt-brand-primary: #6366F1;
-  --pt-brand-primary-hover: #4F46E5;
-  --pt-brand-accent: #38BDF8;
+  --pt-brand-primary: #3b82f6; /* Restrained blue accent */
+  --pt-brand-primary-hover: #2563eb;
+  --pt-brand-accent: #60a5fa;
 
-  --pt-status-success: #10B981;
-  --pt-status-success-bg: rgba(16, 185, 129, 0.12);
-  --pt-status-warning: #F59E0B;
-  --pt-status-warning-bg: rgba(245, 158, 11, 0.12);
-  --pt-status-danger: #EF4444;
-  --pt-status-danger-bg: rgba(239, 68, 68, 0.12);
-  --pt-status-info: #0EA5E9;
-  --pt-status-info-bg: rgba(14, 165, 233, 0.12);
+  --pt-status-success: #10b981; /* Emerald 500 */
+  --pt-status-success-bg: rgba(16, 185, 129, 0.08);
+  --pt-status-warning: #f59e0b; /* Amber 500 */
+  --pt-status-warning-bg: rgba(245, 158, 11, 0.08);
+  --pt-status-danger: #ef4444; /* Red 500 */
+  --pt-status-danger-bg: rgba(239, 68, 68, 0.08);
+  --pt-status-info: #3b82f6;
+  --pt-status-info-bg: rgba(59, 130, 246, 0.08);
 }
 
 body {
@@ -49,29 +49,46 @@ code, kbd, samp, pre {
   font-family: var(--font-mono);
 }
 
-/* Glassmorphism Utilities */
+/* Glassmorphism Utilities replaced with flat clean surfaces */
 .glass-panel {
-  background: rgba(17, 22, 32, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--pt-border-subtle);
+  background: var(--pt-bg-base);
+  border: none;
 }
 
 .glass-modal {
-  background: rgba(26, 32, 44, 0.9);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: #18181b; /* Solid zinc-900 background */
   border: 1px solid var(--pt-border-strong);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
 }
 
-/* Glow Effects */
+/* Glow Effects - Removed */
 .glow-primary {
-  box-shadow: 0 0 15px rgba(99, 102, 241, 0.25);
+  box-shadow: none;
 }
 
 .glow-success {
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
+  box-shadow: none;
+}
+
+/* Skeleton Loading Shimmer */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #18181b 25%,
+    #27272a 50%,
+    #18181b 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
 
 /* Scrollbar Customization */
@@ -96,7 +113,7 @@ code, kbd, samp, pre {
 /* Pulse Animations */
 @keyframes status-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.95); }
+  50% { opacity: 0.6; transform: scale(0.95); }
 }
 
 .animate-status-pulse {

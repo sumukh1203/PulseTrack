@@ -10,7 +10,7 @@ from app.common.enums import ApplicationStatus, Granularity
 
 def test_constants_values() -> None:
     """Verifies operational constants values."""
-    assert MAX_METADATA_BYTES == 10_000
+    assert MAX_METADATA_BYTES == 8192
     assert MAX_BATCH_SIZE == 500
     assert API_KEY_PREFIX_LIVE == "pt_live_"
     assert API_KEY_PREFIX_TEST == "pt_test_"

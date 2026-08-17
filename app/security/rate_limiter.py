@@ -1,3 +1,4 @@
+import logging
 import time
 
 from fastapi import Depends, HTTPException, Response, status
@@ -6,6 +7,8 @@ from redis.asyncio import Redis
 from app.core.redis import get_redis
 from app.models.application import Application
 from app.security.auth import get_current_application
+
+logger = logging.getLogger(__name__)
 
 
 async def check_rate_limit(
@@ -22,12 +25,16 @@ async def check_rate_limit(
 
     redis_key = f"rate_limit:{current_app.id}:{window_start}"
 
-    async with redis.pipeline(transaction=True) as pipe:
-        pipe.incr(redis_key)
-        pipe.expire(redis_key, ttl_seconds + 5)
-        results = await pipe.execute()
+    try:
+        async with redis.pipeline(transaction=True) as pipe:
+            pipe.incr(redis_key)
+            pipe.expire(redis_key, ttl_seconds + 5)
+            results = await pipe.execute()
+        current_count = int(results[0])
+    except Exception as e:
+        logger.warning("Redis rate limiter connection failed, failing open", exc_info=e)
+        return current_app
 
-    current_count = int(results[0])
     remaining = max(0, limit - current_count)
 
     response.headers["X-RateLimit-Limit"] = str(limit)

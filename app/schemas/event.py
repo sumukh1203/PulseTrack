@@ -1,4 +1,5 @@
 import json
+import uuid
 from datetime import datetime
 from typing import Any
 
@@ -29,7 +30,7 @@ class EventCreateRequest(BaseModel):
     @field_validator("metadata")
     @classmethod
     def validate_metadata_size(cls, v: dict[str, Any]) -> dict[str, Any]:
-        """Enforces 10KB size limit on serialized metadata JSON payload."""
+        """Enforces 8KB size limit on serialized metadata JSON payload."""
         serialized = json.dumps(v)
         if len(serialized.encode("utf-8")) > MAX_METADATA_BYTES:
             raise ValueError(
@@ -41,8 +42,31 @@ class EventCreateRequest(BaseModel):
 class EventCreateResponse(BaseModel):
     """Schema for single event ingestion response."""
 
-    id: int
+    id: int | None = None
     status: str = "stored"
     idempotent_replay: bool | None = None
+    request_id: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class EventBatchCreateRequest(BaseModel):
+    """Schema for batch event ingestion request."""
+
+    events: list[dict[str, Any]]
+
+
+class EventResponse(BaseModel):
+    """Schema representing an ingested event."""
+
+    id: int
+    application_id: uuid.UUID
+    event_name: str
+    session_id: str | None
+    distinct_id: str | None
+    event_metadata: dict[str, Any] = Field(..., serialization_alias="metadata")
+    occurred_at: datetime
+    ingested_at: datetime
+    idempotency_key: uuid.UUID | None
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)

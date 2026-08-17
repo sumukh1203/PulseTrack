@@ -1,7 +1,7 @@
 """Global constants for PulseTrack backend."""
 
 # Payload limits
-MAX_METADATA_BYTES: int = 10_000  # 10 KB limit on event metadata JSONB
+MAX_METADATA_BYTES: int = 8192  # 8 KB limit on event metadata JSONB
 MAX_BATCH_SIZE: int = 500  # Maximum events allowed in single batch POST
 
 # API Key Constants (256-bit entropy)

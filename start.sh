@@ -24,6 +24,9 @@ cleanup() {
     if [ -n "$VITE_PID" ]; then
         kill "$VITE_PID" 2>/dev/null || true
     fi
+    if [ -n "$ARQ_PID" ]; then
+        kill "$ARQ_PID" 2>/dev/null || true
+    fi
     exit 0
 }
 
@@ -37,6 +40,18 @@ else
     exit 1
 fi
 
+# Automatically start PostgreSQL and Redis database services
+if command -v docker &> /dev/null && docker info &> /dev/null; then
+    echo "Starting PostgreSQL and Redis database services via Docker Compose..."
+    docker compose up -d db redis
+elif command -v brew &> /dev/null; then
+    echo "Starting PostgreSQL and Redis services via Homebrew..."
+    brew services start postgresql@16 2>/dev/null || true
+    brew services start redis 2>/dev/null || true
+else
+    echo "Warning: Neither Docker nor Homebrew was found. Ensure PostgreSQL and Redis are running manually."
+fi
+
 if [ "$MODE" == "prod" ]; then
     echo "=========================================================="
     echo "  PulseTrack — Production Mode"
@@ -45,6 +60,10 @@ if [ "$MODE" == "prod" ]; then
     cd "$PROJECT_DIR/frontend"
     npm run build
     cd "$PROJECT_DIR"
+
+    echo "Starting ARQ background worker..."
+    arq app.core.worker.WorkerSettings &
+    ARQ_PID=$!
 
     echo ""
     echo "Starting unified FastAPI backend server..."
@@ -58,6 +77,10 @@ else
     echo "=========================================================="
     echo "  PulseTrack — Development Mode (Hot-Reloading)"
     echo "=========================================================="
+
+    echo "Starting ARQ background worker..."
+    arq app.core.worker.WorkerSettings &
+    ARQ_PID=$!
 
     echo "Starting FastAPI backend server on http://localhost:8000..."
     uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload &
@@ -73,6 +96,7 @@ else
     echo "   Frontend Dev UI: http://localhost:5173 (Hot Reloading)"
     echo "   FastAPI Backend: http://localhost:8000"
     echo "   API Docs:        http://localhost:8000/docs"
+    echo "   Prometheus:      http://localhost:8000/metrics"
     echo "=========================================================="
     echo "Press Ctrl+C to stop both services."
     echo ""

@@ -1,7 +1,10 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from redis.asyncio import Redis
 
+from app.core.cache import generate_cache_key, get_cached_json, set_cached_json
+from app.core.redis import get_redis
 from app.dependencies.repositories import get_event_repository
 from app.models.application import Application
 from app.repositories.event import EventRepository
@@ -23,8 +26,9 @@ async def get_metrics(
     query: MetricsQuery = Depends(),
     current_app: Application = Depends(get_current_application),
     repo: EventRepository = Depends(get_event_repository),
+    redis: Redis = Depends(get_redis),
 ) -> MetricsResponse:
-    """Returns time-bucketed event aggregation metrics enforcing tenant isolation."""
+    """Returns time-bucketed event aggregation metrics enforcing tenant isolation with cache-aside."""
     if current_app.id != id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -43,6 +47,38 @@ async def get_metrics(
             },
         )
 
+    # Generate deterministic tenant-isolated cache key
+    cache_key = generate_cache_key(
+        "metrics",
+        application_id=str(id),
+        event_name=query.event_name,
+        start_date=query.start_date.isoformat()
+        if hasattr(query.start_date, "isoformat")
+        else str(query.start_date),
+        end_date=query.end_date.isoformat()
+        if hasattr(query.end_date, "isoformat")
+        else str(query.end_date),
+        granularity=query.granularity.value,
+    )
+
+    # Try cache check
+    try:
+        cached_data = await get_cached_json(redis, cache_key)
+        if cached_data:
+            data = [MetricBucket.model_validate(item) for item in cached_data]
+            return MetricsResponse(
+                application_id=id,
+                event_name=query.event_name,
+                granularity=query.granularity,
+                start_date=query.start_date,
+                end_date=query.end_date,
+                cache_hit=True,
+                data=data,
+            )
+    except Exception:  # nosec B110
+        pass
+
+    # Cache miss or Redis connection issue, query DB
     aggregated_rows = await repo.get_metrics_aggregation(
         application_id=id,
         start_time=query.start_date,
@@ -53,17 +89,26 @@ async def get_metrics(
 
     data = [
         MetricBucket(
-            timestamp=row["timestamp"],
-            event_name=row["event_name"],
+            bucket=row["timestamp"],
             count=row["count"],
+            event_name=row.get("event_name"),
         )
         for row in aggregated_rows
     ]
 
+    # Save to Redis with 60 seconds TTL (FR-AGG-05)
+    try:
+        cache_data = [item.model_dump(mode="json") for item in data]
+        await set_cached_json(redis, cache_key, cache_data, ttl_seconds=60)
+    except Exception:  # nosec B110
+        pass
+
     return MetricsResponse(
         application_id=id,
+        event_name=query.event_name,
         granularity=query.granularity,
         start_date=query.start_date,
         end_date=query.end_date,
+        cache_hit=False,
         data=data,
     )

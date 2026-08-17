@@ -49,6 +49,4 @@ async def test_invalidate_cache_pattern() -> None:
 
     await invalidate_cache_pattern(mock_redis, "cache:metrics:*")
     mock_redis.keys.assert_awaited_once_with("cache:metrics:*")
-    mock_redis.delete.assert_awaited_once_with(
-        "cache:metrics:k1", "cache:metrics:k2"
-    )
+    mock_redis.delete.assert_awaited_once_with("cache:metrics:k1", "cache:metrics:k2")
