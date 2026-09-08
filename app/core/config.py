@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
 
     RATE_LIMIT_DEFAULT_PER_MINUTE: int = 600
+    CORS_ALLOW_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
+    CORS_ALLOW_CREDENTIALS: bool = True
 
     NEON_AUTH_BASE_URL: str | None = None
     NEON_AUTH_JWKS_URL: str | None = None
@@ -46,6 +48,11 @@ class Settings(BaseSettings):
             if v.startswith("postgres://"):
                 return v.replace("postgres://", "postgresql+asyncpg://", 1)
         return v
+
+    @property
+    def cors_allow_origins(self) -> list[str]:
+        """Parses comma-separated CORS origins into a trimmed origin list."""
+        return [origin.strip() for origin in self.CORS_ALLOW_ORIGINS.split(",") if origin.strip()]
 
 
 @lru_cache
