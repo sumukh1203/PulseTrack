@@ -22,6 +22,26 @@ from app.security.rate_limiter import check_rate_limit
 router = APIRouter(prefix="/events", tags=["Events"])
 
 
+def _build_idempotency_replay_response(
+    response: Response, request_id: str, cached_val: str
+) -> EventCreateResponse:
+    """Builds replay response payload based on cached idempotency marker value."""
+    if cached_val.isdigit():
+        response.status_code = status.HTTP_200_OK
+        return EventCreateResponse(
+            id=int(cached_val),
+            status="stored",
+            idempotent_replay=True,
+        )
+
+    response.status_code = status.HTTP_202_ACCEPTED
+    return EventCreateResponse(
+        status="queued",
+        idempotent_replay=True,
+        request_id=request_id,
+    )
+
+
 @router.post(
     "",
     status_code=status.HTTP_202_ACCEPTED,
@@ -40,18 +60,13 @@ async def ingest_event(
     """Ingests a telemetry event with Redis-backed queueing and idempotency checks."""
     request_id = request_id_ctx.get("req_unknown")
 
-    # 1. Idempotency Check in Redis and PostgreSQL
+    # 1. Idempotency check in Redis and PostgreSQL
     if idempotency_key:
         redis_idemp_key = f"idempotency:{current_app.id}:{idempotency_key}"
         try:
             cached_val = await redis.get(redis_idemp_key)
             if cached_val:
-                response.status_code = status.HTTP_200_OK
-                return EventCreateResponse(
-                    id=int(cached_val) if cached_val.isdigit() else None,
-                    status="stored",
-                    idempotent_replay=True,
-                )
+                return _build_idempotency_replay_response(response, request_id, cached_val)
         except Exception:  # nosec B110
             pass
 
@@ -60,12 +75,33 @@ async def ingest_event(
             idempotency_key=idempotency_key,
         )
         if existing_event:
+            try:
+                await redis.set(redis_idemp_key, str(existing_event.id), ex=86400)
+            except Exception:  # nosec B110
+                pass
             response.status_code = status.HTTP_200_OK
             return EventCreateResponse(
                 id=existing_event.id,
                 status="stored",
                 idempotent_replay=True,
             )
+    else:
+        redis_idemp_key = None
+
+    idempotency_reserved = False
+    if redis_idemp_key:
+        try:
+            idempotency_reserved = bool(
+                await redis.set(redis_idemp_key, "queued", ex=86400, nx=True)
+            )
+            if not idempotency_reserved:
+                cached_val = await redis.get(redis_idemp_key)
+                if cached_val:
+                    return _build_idempotency_replay_response(
+                        response, request_id, cached_val
+                    )
+        except Exception:  # nosec B110
+            idempotency_reserved = False
 
     # Construct the event dictionary for queueing
     event_dict = {
@@ -81,10 +117,8 @@ async def ingest_event(
     # Try enqueuing to Redis List
     try:
         await redis.rpush("pulsetrack:queue:events", json.dumps(event_dict))  # type: ignore[misc]
-
-        if idempotency_key:
-            redis_idemp_key = f"idempotency:{current_app.id}:{idempotency_key}"
-            await redis.set(redis_idemp_key, "1", ex=86400)
+        if idempotency_key and redis_idemp_key and not idempotency_reserved:
+            await redis.set(redis_idemp_key, "queued", ex=86400)
 
         response.status_code = status.HTTP_202_ACCEPTED
         return EventCreateResponse(
@@ -92,6 +126,12 @@ async def ingest_event(
             request_id=request_id,
         )
     except Exception:
+        if redis_idemp_key and idempotency_reserved:
+            try:
+                await redis.delete(redis_idemp_key)
+            except Exception:  # nosec B110
+                pass
+
         # Redis connection failure - fall back to synchronous Postgres write path
         event = await repo.create(
             application_id=current_app.id,
@@ -102,6 +142,11 @@ async def ingest_event(
             event_metadata=payload.metadata,
             idempotency_key=idempotency_key,
         )
+        if redis_idemp_key:
+            try:
+                await redis.set(redis_idemp_key, str(event.id), ex=86400)
+            except Exception:  # nosec B110
+                pass
         response.status_code = status.HTTP_201_CREATED
         return EventCreateResponse(
             id=event.id,

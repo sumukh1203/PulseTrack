@@ -63,13 +63,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+settings = get_settings()
+cors_allow_origins = settings.cors_allow_origins or ["*"]
+cors_allow_credentials = settings.CORS_ALLOW_CREDENTIALS and "*" not in cors_allow_origins
+
 # Register Middlewares
 app.add_middleware(PrometheusMiddleware)
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=cors_allow_origins,
+    allow_credentials=cors_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )

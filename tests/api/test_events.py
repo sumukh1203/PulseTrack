@@ -32,6 +32,8 @@ async def mock_redis_connection_error():
     mock = AsyncMock()
     mock.rpush.side_effect = Exception("Redis is down")
     mock.get.side_effect = Exception("Redis is down")
+    mock.set.side_effect = Exception("Redis is down")
+    mock.delete.side_effect = Exception("Redis is down")
     yield mock
 
 
@@ -40,6 +42,8 @@ async def mock_redis_healthy():
     mock = AsyncMock()
     mock.rpush.return_value = 1
     mock.get.return_value = None
+    mock.set.return_value = True
+    mock.delete.return_value = 1
     yield mock
 
 
@@ -141,6 +145,36 @@ async def test_ingest_event_idempotent_replay(
         assert data["id"] == 101
         assert data["status"] == "stored"
         assert data["idempotent_replay"] is True
+    finally:
+        app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_ingest_event_idempotent_replay_from_cached_queue_marker(
+    async_client: AsyncClient, mock_app: Application
+) -> None:
+    """Verifies replay returns 202 queued when Redis idempotency marker is pending."""
+    mock_redis = AsyncMock()
+    mock_redis.get.return_value = "queued"
+    app.dependency_overrides[get_current_application] = lambda: mock_app
+    app.dependency_overrides[get_redis] = lambda: mock_redis
+    try:
+        response = await async_client.post(
+            "/v1/events",
+            headers={
+                "X-API-Key": "pt_live_validkey",
+                "Idempotency-Key": str(uuid.uuid4()),
+            },
+            json={
+                "event_name": "button_click",
+                "occurred_at": "2026-08-07T12:00:00Z",
+            },
+        )
+        assert response.status_code == 202
+        data = response.json()
+        assert data["status"] == "queued"
+        assert data["idempotent_replay"] is True
+        assert data["id"] is None
     finally:
         app.dependency_overrides.clear()
 
